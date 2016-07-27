@@ -1,0 +1,14 @@
+---
+- name: creating docker network
+  command: "docker network create --driver bridge {{ network }}"
+  ignore_errors: yes
+  tags:
+  - network
+
+- include: setup.yml
+  with_together:
+    - "{{ dock }}"
+    - "{{ image }}"
+    - "{{env}}"
+  loop_control:
+    loop_var: outer_item

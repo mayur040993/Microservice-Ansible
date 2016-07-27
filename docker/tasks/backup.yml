@@ -1,0 +1,89 @@
+---
+- name: creating docker network 
+  command: "docker network create --driver bridge {{ network }}"
+  ignore_errors: yes
+  tags: 
+  - network
+
+- name: creating directories
+  file: path={{ansible_user_dir}}/{{project}}/{{item.0}}/logs/ state=directory mode=0755
+  file: path={{ansible_user_dir}}/{{project}}/{{item.0}}/webapps/ state=directory mode=0755
+  with_together:
+    - "{{ dock }}"
+    - "{{ image }}"
+  when: item.1 == "tomcat"
+  tags:
+   - docker
+
+- name: directories
+  file: path={{ansible_user_dir}}/{{project}}/{{item.0}}/logs/ state=directory mode=0755
+  file: path={{ansible_user_dir}}/{{project}}/{{item.0}}/config/ state=directory mode=0755
+  with_together:
+    - "{{ dock }}"
+    - "{{ image }}"
+  when: item.1 == "nginx"
+  tags:
+   - docker
+
+
+- name: "container"
+  docker:
+    name: "{{ item.0 }}"
+    image: "ttnd/{{project}}-{{item.0}}:latest"
+    state: started
+    pull: always
+    volumes:
+    - "{{ ansible_user_dir }}/{{ project }}/{{ item.0 }}/logs/:/opt/tomcat8/logs/"
+    - "{{ansible_user_dir}}/{{project}}/{{item.0}}/webapps/:/opt/tomcat8/webapps/"
+    net: "{{ network }}"
+    env: "{{item.2}}"
+  with_together: 
+    - "{{ dock }}"
+    - "{{ image }}"
+    - "{{env}}"
+  when: item.1 == "tomcat"
+  tags:
+   - docker
+
+- name: "container"
+  docker:
+    name: "{{ item.0 }}"
+    image: ttnd/{{project}}-{{item.0}}:latest
+    state: started
+    pull: always
+    expose: 80
+    ports:
+    - "80:80"
+    volumes:
+    - "{{ansible_user_dir}}/{{project}}/{{item.0}}/logs/:/var/log/nginx/"
+    - "{{ansible_user_dir}}/{{project}}/{{item.0}}/config/:/etc/nginx/sites-avaliable/"
+    net: "{{ network }}"
+    env: "{{item.2}}"
+  with_together: 
+    - "{{ dock }}"
+    - "{{ image }}"
+    - "{{env}}"
+  when: item.1 == "nginx"
+  tags:
+   - docker
+
+- name: "Starting Services Tomcat"
+  shell: "docker exec {{item.0}} /bin/bash  /opt/tomcat8/bin/catalina.sh start"
+  with_together:
+    - "{{ dock }}"
+    - "{{ image }}"
+    - "{{env}}"
+  when: item.1 == "tomcat"
+  tags:
+   - docker
+
+- name: "Starting Service Nginx"
+  shell: "docker exec {{item.0}} service nginx start"
+  with_together:
+    - "{{ dock }}"
+    - "{{ image }}"
+    - "{{env}}"
+  when: item.1 == "nginx"
+  tags:
+   - docker
+

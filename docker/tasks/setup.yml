@@ -1,0 +1,57 @@
+- name: "{{outer_item.0}} creating directories"
+  file: path={{ansible_user_dir}}/{{project}}/{{outer_item.0}}/logs/ state=directory mode=0755
+  file: path={{ansible_user_dir}}/{{project}}/{{outer_item.0}}/webapps/ state=directory mode=0755
+  when: outer_item.1 == "tomcat"
+  tags:
+   - docker
+
+- name: "{{outer_item.0}} directories"
+  file: path={{ansible_user_dir}}/{{project}}/{{outer_item.0}}/logs/ state=directory mode=0755
+  file: path={{ansible_user_dir}}/{{project}}/{{outer_item.0}}/config/ state=directory mode=0755
+  when: outer_item.1 == "nginx"
+  tags:
+   - docker
+
+- name: "{{outer_item.0}} container"
+  docker:
+    name: "{{ outer_item.0 }}"
+    image: "ttnd/{{project}}-{{outer_item.0}}:latest"
+    state: started
+    pull: always
+    volumes:
+    - "{{ ansible_user_dir }}/{{ project }}/{{ outer_item.0 }}/logs/:/opt/tomcat8/logs/"
+    net: "{{ network }}"
+    env: "{{outer_item.2}}"
+  when: outer_item.1 == "tomcat"
+  tags:
+   - docker
+
+- name: "{{outer_item.0}} container"
+  docker:
+    name: "{{ outer_item.0 }}"
+    image: ttnd/{{project}}-{{outer_item.0}}:latest
+    state: started
+    pull: always
+    expose: 80
+    ports:
+    - "80:80"
+    volumes:
+    - "{{ansible_user_dir}}/{{project}}/{{outer_item.0}}/logs/:/var/log/nginx/"
+    - "{{ansible_user_dir}}/{{project}}/{{outer_item.0}}/config/:/etc/nginx/sites-avaliable/"
+    net: "{{ network }}"
+    env: "{{outer_item.2}}"
+  when: outer_item.1 == "nginx"
+  tags:
+   - docker
+
+- name: "Starting Services Tomcat in {{outer_item.0}}"
+  shell: "docker exec {{outer_item.0}} /bin/bash  /opt/tomcat8/bin/catalina.sh start"
+  when: outer_item.1 == "tomcat"
+  tags:
+   - docker
+
+- name: "Starting Service Nginx in {{outer_item.0}}"
+  shell: "docker exec {{outer_item.0}} service nginx start"
+  when: outer_item.1 == "nginx"
+  tags:
+   - docker
