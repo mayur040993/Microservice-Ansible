@@ -12,3 +12,5 @@
     - "{{env}}"
   loop_control:
     loop_var: outer_item
+
+#- include: setupdocker.yml

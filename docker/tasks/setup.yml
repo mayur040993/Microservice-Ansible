@@ -14,7 +14,7 @@
 
 - name: "{{outer_item.0}} container"
   docker:
-    name: "{{ outer_item.0 }}"
+    name: "dthi"
     image: "ttnd/{{project}}-{{outer_item.0}}:latest"
     state: started
     pull: always
@@ -28,8 +28,8 @@
 
 - name: "{{outer_item.0}} container"
   docker:
-    name: "{{ outer_item.0 }}"
-    image: ttnd/{{project}}-{{outer_item.0}}:latest
+    name: "dthi"
+    image: "ttnd/{{project}}-{{outer_item.0}}:latest"
     state: started
     pull: always
     expose: 80
